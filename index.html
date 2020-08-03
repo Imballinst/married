@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<head>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;1,700&display=swap"
+    rel="stylesheet"
+  />
+
+  <title>How long have I been married?</title>
+
+  <style>
+    html,
+    body {
+      margin: 0;
+    }
+
+    .root {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .row {
+      display: flex;
+      flex-direction: row;
+    }
+
+    .row:not(:first-child) {
+      margin-top: 24px;
+    }
+
+    .wrapper {
+      display: inline-block;
+      text-align: center;
+    }
+
+    .value,
+    .unit {
+      font-family: 'Space Mono', monospace;
+    }
+
+    .value {
+      font-size: 5rem;
+      font-weight: 700;
+    }
+
+    .unit {
+      font-size: 3rem;
+    }
+
+    .copy {
+      position: fixed;
+      bottom: 0;
+      display: block;
+      width: 100%;
+      text-align: center;
+      font-size: 1.5rem;
+      font-family: 'Space Mono', monospace;
+    }
+
+    /* Media queries. */
+    @media (max-width: 800px) {
+      .row {
+        flex-direction: column;
+        flex-wrap: wrap;
+      }
+
+      .row:not(:first-child) {
+        margin-top: 0;
+      }
+
+      .value {
+        font-size: 6rem;
+      }
+
+      .unit {
+        font-size: 3rem;
+        margin-top: -24px;
+      }
+
+      .copy {
+        position: relative;
+        display: block;
+        margin-top: 24px;
+      }
+    }
+
+    @media (min-width: 800px) {
+      .wrapper:not(:first-child) {
+        margin-left: 48px;
+      }
+
+      .row {
+        width: 800px;
+      }
+
+      .wrapper {
+        width: 33.3%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="root">
+    <div class="row">
+      <div class="wrapper">
+        <div class="value" id="years"></div>
+        <div class="unit">years</div>
+      </div>
+      <div class="wrapper">
+        <div class="value" id="months"></div>
+        <div class="unit">months</div>
+      </div>
+      <div class="wrapper">
+        <div class="value" id="days"></div>
+        <div class="unit">days</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="wrapper">
+        <div class="value" id="hours"></div>
+        <div class="unit">hours</div>
+      </div>
+      <div class="wrapper">
+        <div class="value" id="minutes"></div>
+        <div class="unit">minutes</div>
+      </div>
+      <div class="wrapper">
+        <div class="value" id="seconds"></div>
+        <div class="unit">seconds</div>
+      </div>
+    </div>
+  </div>
+  <div class="copy">Copyright 2020, Try Ajitiono</div>
+
+  <script>
+    const ONE_MINUTE_IN_SECONDS = 60;
+    const ONE_HOUR_IN_SECONDS = ONE_MINUTE_IN_SECONDS * 60;
+    const ONE_DAY_IN_SECONDS = ONE_HOUR_IN_SECONDS * 24;
+    // Let's assume that on average, one month is 30 days for the sake of simplicity.
+    const ONE_MONTH_IN_SECONDS = ONE_DAY_IN_SECONDS * 30;
+    const ONE_YEAR_IN_SECONDS = ONE_MONTH_IN_SECONDS * 12;
+
+    window.addEventListener('load', () => {
+      // From Instagram tag: `<time class="_1o9PC Nzb55" datetime="2020-07-12T03:04:06.000Z" title="Jul 12, 2020">July 12</time>`.
+      // Instagram datetime post: 2020-07-12T03:04:06.000Z.
+      // Time-stamp the "ijab qabul" was done: 39:21/59:54 -- so there is 20 mins and 33 secs to go.
+      // Add the datetime to GMT+7, 10:04:06.
+      // Subtract the datetime with 20 mins and 33 secs -- 09:43:33.
+      const weddingDate = new Date(2020, 6 /* July */, 12, 9, 43, 33);
+
+      calculate(weddingDate);
+      setInterval(() => calculate(weddingDate), 1000);
+    });
+
+    function appendZeros(number) {
+      if (number < 10) {
+        return `0${number}`;
+      }
+
+      return `${number}`;
+    }
+
+    function calculate(weddingDate) {
+      const currentDate = new Date();
+
+      const diffInMilliSeconds = Math.abs(
+        weddingDate.getTime() - currentDate.getTime()
+      );
+      const diffInSeconds = Math.round(diffInMilliSeconds / 1000);
+
+      // To contain remainder.
+      let remainder;
+
+      // Years.
+      const years = Math.floor(diffInSeconds / ONE_YEAR_IN_SECONDS);
+      remainder = diffInSeconds % ONE_YEAR_IN_SECONDS;
+
+      // Months.
+      const months = Math.floor(remainder / ONE_MONTH_IN_SECONDS);
+      remainder = remainder % ONE_MONTH_IN_SECONDS;
+
+      // Days.
+      const days = Math.floor(remainder / ONE_DAY_IN_SECONDS);
+      remainder = remainder % ONE_DAY_IN_SECONDS;
+
+      // Hours.
+      const hours = Math.floor(remainder / ONE_HOUR_IN_SECONDS);
+      remainder = remainder % ONE_HOUR_IN_SECONDS;
+
+      // Minutes.
+      const minutes = Math.floor(remainder / ONE_MINUTE_IN_SECONDS);
+
+      // Seconds.
+      const seconds = remainder % ONE_MINUTE_IN_SECONDS;
+
+      // Fill into the divs.
+      const yearsDiv = document.getElementById('years');
+      const monthsDiv = document.getElementById('months');
+      const daysDiv = document.getElementById('days');
+      const hoursDiv = document.getElementById('hours');
+      const minutesDiv = document.getElementById('minutes');
+      const secondsDiv = document.getElementById('seconds');
+
+      yearsDiv.innerHTML = appendZeros(years);
+      monthsDiv.innerHTML = appendZeros(months);
+      daysDiv.innerHTML = appendZeros(days);
+      hoursDiv.innerHTML = appendZeros(hours);
+      minutesDiv.innerHTML = appendZeros(minutes);
+      secondsDiv.innerHTML = appendZeros(seconds);
+    }
+  </script>
+</body>
