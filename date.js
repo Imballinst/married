@@ -51,16 +51,111 @@ function calculate() {
   secondsDiv.innerHTML = appendZeros(seconds);
 }
 
+// Diff functions.
+// I think in this case, we can't really rely on so-mini-functions.
+// Years, months, days, until seconds should be unified.
+function differenceInYears(date1, date2) {
+  const monthDiff = date1.getMonth() - date2.getMonth();
+  const subtractor = monthDiff < 0 ? 1 : 0;
+
+  return Math.abs(date1.getFullYear() - date2.getFullYear()) - subtractor;
+}
+
+function differenceInMonths(date1, date2) {
+  const dateInMonthDiff = date1.getDate() - date2.getDate();
+  const monthDiff = date1.getMonth() - date2.getMonth();
+
+  if (dateInMonthDiff === 0) {
+    return Math.abs(monthDiff);
+  }
+
+  const dateInMonthSubtractor = dateInMonthDiff < 0 ? 1 : 0;
+
+  return Math.abs(monthDiff) - dateInMonthSubtractor;
+}
+
+function differenceInDays(date1, date2) {
+  const time1 = date1.getTime();
+  const time2 = date2.getTime();
+
+  const rawDiffInDays = (time1 - time2) / ONE_DAY_IN_MILLISECONDS;
+  const diffInDays = Math.abs(rawDiffInDays);
+
+  if (diffInDays <= 28) {
+    // Early exit. We use 28 as it is the "safe" option when number of days in a month
+    // ranging from 28 to 31.
+    return Math.floor(diffInDays);
+  }
+
+  const dateInMonth1 = date1.getDate();
+  const dateInMonth2 = date2.getDate();
+  const differenceInDate = dateInMonth1 - dateInMonth2;
+
+  if (differenceInDate > 0) {
+    // Check hours.
+    const hour1 = date1.getHours();
+    const hour2 = date2.getHours();
+
+    if (hour1 > hour2) {
+      // Hour is bigger.
+      return differenceInDate;
+    }
+
+    // Check minutes.
+    const differenceInMinutes = rawDifferenceInMinutes(date1, date2);
+
+    if (differenceInMinutes > 0) {
+      // Minute is bigger.
+      return differenceInDate;
+    }
+
+    // Check seconds.
+    const differenceInSeconds = rawDifferenceInSeconds(date1, date2);
+
+    if (differenceInSeconds > 0) {
+      // Second is bigger.
+      return differenceInDate;
+    }
+
+    return differenceInDate - 1;
+  }
+}
+
+function differenceInHours(date1, date2, rawDiffInMinutesParam) {
+  const rawDiffInMinutes =
+    rawDiffInMinutesParam || rawDifferenceInMinutes(date1, date2);
+  const diffInHours = Math.abs(rawDifferenceInHours(date1, date2));
+
+  if (rawDiffInMinutes < 0) {
+    // This is not full 1 minute yet.
+    return diffInHours - 1;
+  }
+
+  return diffInHours;
+}
+
+function differenceInMinutes(date1, date2, rawDiffInSecondsParam) {
+  const rawDiffInSeconds =
+    rawDiffInSecondsParam || rawDifferenceInSeconds(date1, date2);
+  const diffInMinutes = Math.abs(rawDifferenceInMinutes(date1, date2));
+
+  if (rawDiffInSeconds < 0) {
+    // This is not full 1 minute yet.
+    return diffInMinutes - 1;
+  }
+
+  return diffInMinutes;
+}
+
+function differenceInSeconds(date1, date2) {
+  return Math.abs(rawDifferenceInSeconds(date1, date2));
+}
+
 // Helper functions.
-function startOfDay(date) {
-  const newDate = new Date(date);
+function getNumberOfDaysInMonth(date) {
+  const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1);
 
-  newDate.setHours(0);
-  newDate.setMinutes(0);
-  newDate.setSeconds(0);
-  newDate.setMilliseconds(0);
-
-  return newDate;
+  return endOfMonth.getDate();
 }
 
 function appendZeros(number) {
@@ -71,77 +166,23 @@ function appendZeros(number) {
   return `${number}`;
 }
 
-function differenceInYears(date1, date2) {
-  return Math.abs(date1.getFullYear() - date2.getFullYear());
+// Raw diff functions without Math.abs().
+function rawDifferenceInDays(date1, date2) {
+  // For dates, it can be a litle bit complex, as they are not uniform.
+  // Unlike seconds [0-59], minutes [0-59], and hours [0-23], date can vary.
+  // Some months can have 31 days, some 30, and February may have 29 days instead of 28 on leap years.
+  // Hence, we use this so we can use it in rawDifferenceInMonths and rawDifferenceInYears.
+  return (date1.getTime() - date2.getTime()) / ONE_DAY_IN_MILLISECONDS;
 }
 
-function differenceInMonths(date1, date2) {
-  const diffInYears = differenceInYears(date1, date2);
-  let diff;
-
-  if (diffInYears === 0) {
-    diff = Math.abs(date1.getMonth() - date2.getMonth());
-  } else {
-    const month1 = date1.getMonth();
-    const month2 = date2.getMonth();
-    const monthDiff = month1 - month2;
-
-    if (monthDiff < 0) {
-      // `date2` is later month(s) in different year.
-      diff = 12 - monthDiff;
-    } else if (monthDiff > 0) {
-      // `date2` is previous month(s) in different year.
-      diff = monthDiff;
-    }
-  }
-
-  return Math.abs(diff);
+function rawDifferenceInHours(date1, date2) {
+  return date1.getHours() - date2.getHours();
 }
 
-function differenceInDays(date1, date2) {
-  const newDate1 = new Date(date1);
-  const newDate2 = new Date(date2);
-
-  const time1 = newDate1.getTime();
-  let time2 = newDate2.getTime();
-
-  if (ONE_DAY_IN_MILLISECONDS > Math.abs(time1 - time2)) {
-    // Early exit if the difference is not bigger than one day same day.
-    return 0;
-  }
-
-  const action = time2 < time1 ? 'add' : 'subtract';
-  let numOfDays = 0;
-  let previousDiffOnMonths = 0;
-
-  while (time1 !== time2) {
-    if (action === 'add') {
-      time2 += ONE_DAY_IN_MILLISECONDS;
-    } else {
-      time2 -= ONE_DAY_IN_MILLISECONDS;
-    }
-
-    newDate2.setTime(time2);
-    numOfDays += 1;
-
-    if (differenceInMonths(newDate1, newDate2) !== previousDiffOnMonths) {
-      // Reset the numOfDays when we have switched to a different month, but same date.
-      numOfDays = 0;
-      previousDiffOnMonths += 1;
-    }
-  }
-
-  return numOfDays;
+function rawDifferenceInMinutes(date1, date2) {
+  return date1.getMinutes() - date2.getMinutes();
 }
 
-function differenceInHours(date1, date2) {
-  return Math.abs(date1.getHours() - date2.getHours());
-}
-
-function differenceInMinutes(date1, date2) {
-  return Math.abs(date1.getMinutes() - date2.getMinutes());
-}
-
-function differenceInSeconds(date1, date2) {
-  return Math.abs(date1.getSeconds() - date2.getSeconds());
+function rawDifferenceInSeconds(date1, date2) {
+  return date1.getSeconds() - date2.getSeconds();
 }
