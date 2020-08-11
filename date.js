@@ -53,7 +53,7 @@ function calculate(currentDate = new Date()) {
   days = currentDateInMonth - weddingDateInMonth;
 
   // We use this to calculate time.
-  const daysRemainder = (diff % ONE_DAY_IN_MILLISECONDS) / 1000;
+  const daysRemainder = Math.floor((diff % ONE_DAY_IN_MILLISECONDS) / 1000);
 
   // Time.
   hours = floor(daysRemainder / ONE_HOUR_IN_SECONDS);
