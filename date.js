@@ -24,8 +24,6 @@ module.exports = {
 };
 
 function calculate(currentDate = new Date()) {
-  let numberOfDaysInMilliseconds = 365 * ONE_DAY_IN_MILLISECONDS;
-
   let years;
   let months;
   let days;
@@ -39,72 +37,65 @@ function calculate(currentDate = new Date()) {
   const diff = currentMilliSeconds - weddingMilliSeconds;
 
   // We can cut off years first as the number of days is static, 365 or 366.
-  years = diff / numberOfDaysInMilliseconds;
-  const yearsRemainder = diff % numberOfDaysInMilliseconds;
+  years = currentDate.getFullYear() - WEDDING_DATE.getFullYear();
 
   // For months and days, however, it's a little bit tricky.
   const weddingMonth = WEDDING_DATE.getMonth();
   const currentMonth = currentDate.getMonth();
 
   // Don't forget to subtract this if date, hours, minutes, seconds is lesser.
-  months = abs(weddingMonth - currentMonth);
+  months = currentMonth - weddingMonth;
 
   // Days.
   const weddingDateInMonth = WEDDING_DATE.getDate();
   const currentDateInMonth = currentDate.getDate();
 
-  days = abs(weddingDateInMonth - currentDateInMonth);
-  const daysRemainder = yearsRemainder % ONE_DAY_IN_MILLISECONDS;
+  days = currentDateInMonth - weddingDateInMonth;
+
+  // We use this to calculate time.
+  const daysRemainder = (diff % ONE_DAY_IN_MILLISECONDS) / 1000;
 
   // Time.
   hours = floor(daysRemainder / ONE_HOUR_IN_SECONDS);
-  const hoursRemainder = daysRemainder / ONE_HOUR_IN_SECONDS;
+  const hoursRemainder = daysRemainder % ONE_HOUR_IN_SECONDS;
 
   minutes = floor(hoursRemainder / ONE_MINUTE_IN_SECONDS);
-  seconds = hoursRemainder % ONE_MINUTE_IN_SECONDS;
+  const minutesRemainder = hoursRemainder % ONE_MINUTE_IN_SECONDS;
+
+  seconds = minutesRemainder % ONE_MINUTE_IN_SECONDS;
 
   if (currentDateInMonth === weddingDateInMonth) {
     // Check hours.
     const weddingHours = WEDDING_DATE.getHours();
+    const currentHours = currentDate.getHours();
 
-    if (hours < weddingHours) {
+    if (currentHours < weddingHours) {
       days -= 1;
-    } else if (hours === weddingHours) {
+    } else if (currentHours === weddingHours) {
       // Check minutes.
       const weddingMinutes = WEDDING_DATE.getMinutes();
+      const currentMinutes = currentDate.getMinutes();
 
-      if (minutes < weddingMinutes) {
-        hours -= 1;
-      } else if (minutes === weddingMinutes) {
+      if (currentMinutes < weddingMinutes) {
+        days -= 1;
+      } else if (currentMinutes === weddingMinutes) {
         // Check seconds.
-        if (seconds < WEDDING_DATE.getSeconds()) {
-          minutes -= 1;
+        if (currentDate.getSeconds() < WEDDING_DATE.getSeconds()) {
+          days -= 1;
         }
       }
     }
-  } else if (currentDateInMonth < weddingDateInMonth) {
-    months -= 1;
   }
 
   // If any of them is less than 1, set to maximum.
-  if (minutes < 0) {
-    minutes = ONE_MINUTE_IN_SECONDS - 1;
-    hours -= 1;
-  }
-
-  if (hours < 0) {
-    hours = 23;
-    days -= 1;
-  }
-
   if (days < 0) {
-    days = getNumberOfDaysInMonth(WEDDING_DATE) - 1;
+    days += getNumberOfDaysInMonth(currentDate);
     months -= 1;
   }
 
   if (months < 0) {
-    // We don't set years here because it's guaranteed to be valid with the floor division.
     months = 11;
+    years -= 1;
   }
 
   return { years, months, days, hours, minutes, seconds };
