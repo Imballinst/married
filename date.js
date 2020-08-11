@@ -9,32 +9,108 @@ const ONE_DAY_IN_MILLISECONDS = ONE_DAY_IN_SECONDS * 1000;
 // Add the datetime to GMT+7, 10:04:06.
 // Subtract the datetime with 20 mins and 33 secs -- 09:43:33.
 const WEDDING_DATE = new Date(2020, 6 /* July */, 12, 9, 43, 33);
+// Re-assign functions from JavaScript engine.
+const { floor, abs } = Math;
 
+// Export.
 module.exports = {
   // Export the constants, too.
   WEDDING_DATE,
   // Export the functions.
   calculate,
-  startOfDay,
+  render,
   appendZeros,
-  differenceInYears,
-  differenceInMonths,
-  differenceInDays,
-  differenceInHours,
-  differenceInMinutes,
-  differenceInSeconds
+  getNumberOfDaysInMonth
 };
 
-function calculate() {
-  const currentDate = new Date();
+function calculate(currentDate = new Date()) {
+  let numberOfDaysInMilliseconds = 365 * ONE_DAY_IN_MILLISECONDS;
 
-  const years = differenceInYears(WEDDING_DATE, currentDate);
-  const months = differenceInMonths(WEDDING_DATE, currentDate);
-  const days = differenceInDays(WEDDING_DATE, currentDate);
-  const hours = differenceInHours(WEDDING_DATE, currentDate);
-  const minutes = differenceInMinutes(WEDDING_DATE, currentDate);
-  const seconds = differenceInSeconds(WEDDING_DATE, currentDate);
+  let years;
+  let months;
+  let days;
+  let hours;
+  let minutes;
+  let seconds;
 
+  // Get raw time.
+  const weddingMilliSeconds = WEDDING_DATE.getTime();
+  const currentMilliSeconds = currentDate.getTime();
+  const diff = currentMilliSeconds - weddingMilliSeconds;
+
+  // We can cut off years first as the number of days is static, 365 or 366.
+  years = diff / numberOfDaysInMilliseconds;
+  const yearsRemainder = diff % numberOfDaysInMilliseconds;
+
+  // For months and days, however, it's a little bit tricky.
+  const weddingMonth = WEDDING_DATE.getMonth();
+  const currentMonth = currentDate.getMonth();
+
+  // Don't forget to subtract this if date, hours, minutes, seconds is lesser.
+  months = abs(weddingMonth - currentMonth);
+
+  // Days.
+  const weddingDateInMonth = WEDDING_DATE.getDate();
+  const currentDateInMonth = currentDate.getDate();
+
+  days = abs(weddingDateInMonth - currentDateInMonth);
+  const daysRemainder = yearsRemainder % ONE_DAY_IN_MILLISECONDS;
+
+  // Time.
+  hours = floor(daysRemainder / ONE_HOUR_IN_SECONDS);
+  const hoursRemainder = daysRemainder / ONE_HOUR_IN_SECONDS;
+
+  minutes = floor(hoursRemainder / ONE_MINUTE_IN_SECONDS);
+  seconds = hoursRemainder % ONE_MINUTE_IN_SECONDS;
+
+  if (currentDateInMonth === weddingDateInMonth) {
+    // Check hours.
+    const weddingHours = WEDDING_DATE.getHours();
+
+    if (hours < weddingHours) {
+      days -= 1;
+    } else if (hours === weddingHours) {
+      // Check minutes.
+      const weddingMinutes = WEDDING_DATE.getMinutes();
+
+      if (minutes < weddingMinutes) {
+        hours -= 1;
+      } else if (minutes === weddingMinutes) {
+        // Check seconds.
+        if (seconds < WEDDING_DATE.getSeconds()) {
+          minutes -= 1;
+        }
+      }
+    }
+  } else if (currentDateInMonth < weddingDateInMonth) {
+    months -= 1;
+  }
+
+  // If any of them is less than 1, set to maximum.
+  if (minutes < 0) {
+    minutes = ONE_MINUTE_IN_SECONDS - 1;
+    hours -= 1;
+  }
+
+  if (hours < 0) {
+    hours = 23;
+    days -= 1;
+  }
+
+  if (days < 0) {
+    days = getNumberOfDaysInMonth(WEDDING_DATE) - 1;
+    months -= 1;
+  }
+
+  if (months < 0) {
+    // We don't set years here because it's guaranteed to be valid with the floor division.
+    months = 11;
+  }
+
+  return { years, months, days, hours, minutes, seconds };
+}
+
+function render({ years, months, days, hours, minutes, seconds }) {
   // Fill into the divs.
   const yearsDiv = document.getElementById('years');
   const monthsDiv = document.getElementById('months');
@@ -51,109 +127,9 @@ function calculate() {
   secondsDiv.innerHTML = appendZeros(seconds);
 }
 
-// Diff functions.
-// I think in this case, we can't really rely on so-mini-functions.
-// Years, months, days, until seconds should be unified.
-function differenceInYears(date1, date2) {
-  const monthDiff = date1.getMonth() - date2.getMonth();
-  const subtractor = monthDiff < 0 ? 1 : 0;
-
-  return Math.abs(date1.getFullYear() - date2.getFullYear()) - subtractor;
-}
-
-function differenceInMonths(date1, date2) {
-  const dateInMonthDiff = date1.getDate() - date2.getDate();
-  const monthDiff = date1.getMonth() - date2.getMonth();
-
-  if (dateInMonthDiff === 0) {
-    return Math.abs(monthDiff);
-  }
-
-  const dateInMonthSubtractor = dateInMonthDiff < 0 ? 1 : 0;
-
-  return Math.abs(monthDiff) - dateInMonthSubtractor;
-}
-
-function differenceInDays(date1, date2) {
-  const time1 = date1.getTime();
-  const time2 = date2.getTime();
-
-  const rawDiffInDays = (time1 - time2) / ONE_DAY_IN_MILLISECONDS;
-  const diffInDays = Math.abs(rawDiffInDays);
-
-  if (diffInDays <= 28) {
-    // Early exit. We use 28 as it is the "safe" option when number of days in a month
-    // ranging from 28 to 31.
-    return Math.floor(diffInDays);
-  }
-
-  const dateInMonth1 = date1.getDate();
-  const dateInMonth2 = date2.getDate();
-  const differenceInDate = dateInMonth1 - dateInMonth2;
-
-  if (differenceInDate > 0) {
-    // Check hours.
-    const hour1 = date1.getHours();
-    const hour2 = date2.getHours();
-
-    if (hour1 > hour2) {
-      // Hour is bigger.
-      return differenceInDate;
-    }
-
-    // Check minutes.
-    const differenceInMinutes = rawDifferenceInMinutes(date1, date2);
-
-    if (differenceInMinutes > 0) {
-      // Minute is bigger.
-      return differenceInDate;
-    }
-
-    // Check seconds.
-    const differenceInSeconds = rawDifferenceInSeconds(date1, date2);
-
-    if (differenceInSeconds > 0) {
-      // Second is bigger.
-      return differenceInDate;
-    }
-
-    return differenceInDate - 1;
-  }
-}
-
-function differenceInHours(date1, date2, rawDiffInMinutesParam) {
-  const rawDiffInMinutes =
-    rawDiffInMinutesParam || rawDifferenceInMinutes(date1, date2);
-  const diffInHours = Math.abs(rawDifferenceInHours(date1, date2));
-
-  if (rawDiffInMinutes < 0) {
-    // This is not full 1 minute yet.
-    return diffInHours - 1;
-  }
-
-  return diffInHours;
-}
-
-function differenceInMinutes(date1, date2, rawDiffInSecondsParam) {
-  const rawDiffInSeconds =
-    rawDiffInSecondsParam || rawDifferenceInSeconds(date1, date2);
-  const diffInMinutes = Math.abs(rawDifferenceInMinutes(date1, date2));
-
-  if (rawDiffInSeconds < 0) {
-    // This is not full 1 minute yet.
-    return diffInMinutes - 1;
-  }
-
-  return diffInMinutes;
-}
-
-function differenceInSeconds(date1, date2) {
-  return Math.abs(rawDifferenceInSeconds(date1, date2));
-}
-
 // Helper functions.
 function getNumberOfDaysInMonth(date) {
-  const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1);
+  const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
   return endOfMonth.getDate();
 }
@@ -164,25 +140,4 @@ function appendZeros(number) {
   }
 
   return `${number}`;
-}
-
-// Raw diff functions without Math.abs().
-function rawDifferenceInDays(date1, date2) {
-  // For dates, it can be a litle bit complex, as they are not uniform.
-  // Unlike seconds [0-59], minutes [0-59], and hours [0-23], date can vary.
-  // Some months can have 31 days, some 30, and February may have 29 days instead of 28 on leap years.
-  // Hence, we use this so we can use it in rawDifferenceInMonths and rawDifferenceInYears.
-  return (date1.getTime() - date2.getTime()) / ONE_DAY_IN_MILLISECONDS;
-}
-
-function rawDifferenceInHours(date1, date2) {
-  return date1.getHours() - date2.getHours();
-}
-
-function rawDifferenceInMinutes(date1, date2) {
-  return date1.getMinutes() - date2.getMinutes();
-}
-
-function rawDifferenceInSeconds(date1, date2) {
-  return date1.getSeconds() - date2.getSeconds();
 }
