@@ -14,13 +14,7 @@ const { floor, abs } = Math;
 
 // Export.
 module.exports = {
-  // Export the constants, too.
-  WEDDING_DATE,
-  // Export the functions.
-  calculate,
-  render,
-  appendZeros,
-  getNumberOfDaysInMonth
+  calculate
 };
 
 function calculate(currentDate = new Date()) {
