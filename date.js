@@ -88,7 +88,7 @@ function calculate(currentDate = new Date()) {
   }
 
   if (months < 0) {
-    months = 11;
+    months = 12 + months;
     years -= 1;
   }
 
