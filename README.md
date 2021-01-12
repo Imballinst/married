@@ -1,8 +1,8 @@
 # married
 
-A simple time ticker to count how long have I been married, so when things are getting hard, I can look back and see how far we have gotten together. I want to show people that husband and wife of a certain household **can** have a longlasting emotional affection, which will have a positive impact on their children.
+A simple time ticker to count how long has it been since I got married. I want to prove that husband and wife of a certain household **can** have a longlasting emotional affection, which will have a positive impact on their children.
 
-I want to build a harmonious family. A family, no matter where we live, we will always call it home. This is because a home is not tied to a physical space. It is the people. In the future, I want me, my wife, and _our_ children to always have a place to come back **home** and feel safe inside, physically and emotionally.
+I want to build a harmonious family. A happy family where happiness spreads to all family members. A family, no matter wherever they live, every member of it will always call it home. Home is not always about the location, it is not always about the building. It is about the _people_ who live inside it. In the future, I want me, my wife, and _our_ children to have a place where we feel safe inside, physically and emotionally.
 
 ## LICENSE
 
